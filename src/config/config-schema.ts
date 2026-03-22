@@ -1,3 +1,6 @@
+// Based on @tencent-weixin/openclaw-weixin v1.0.2.
+// Modifications: demoService schema for the local web console.
+
 import { z } from "zod";
 
 import { CDN_BASE_URL, DEFAULT_BASE_URL } from "../auth/accounts.js";

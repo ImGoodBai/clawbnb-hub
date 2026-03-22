@@ -1,24 +1,43 @@
-# MoltHuman Weixin Demo Plugin
+# WeClawBot-ex
 
-Single-package Weixin demo plugin for `openclaw-main`.
+OpenClaw Weixin demo plugin fork for multi-account QR login and a local web console.
 
-## Scope
+This repository is not a standalone bot runtime. It is an OpenClaw plugin source repository.
 
-- Registers the Weixin channel internally.
-- Starts a local HTTP/H5 control surface.
-- Creates QR login sessions.
-- Shows account status, cooldown visibility for `errcode = -14`, and recent warnings/errors.
-- Returns a manual Gateway restart command after scan success.
+## What It Does
 
-This package does not bridge into `moltApp` billing, orders, or settlement.
+- Replaces the stock `openclaw-weixin` plugin with a forked build
+- Adds a local HTTP/H5 control page for QR login and account status
+- Supports multiple saved Weixin accounts in one OpenClaw Gateway
+- Shows `errcode = -14` cooldown state in the UI
+- Keeps DM sessions isolated with `session.dmScope = "per-account-channel-peer"`
 
-## Install
+## Prerequisites
+
+- Node.js >= 22
+- OpenClaw installed and `openclaw` CLI available
+- A local OpenClaw Gateway environment
+
+## Install From This Repository
+
+Recommended for users right now:
 
 ```bash
-npm install molthuman-oc-plugin-wx
+git clone git@github.com:ImGoodBai/WeClawBot-ex.git
+cd WeClawBot-ex
+
+openclaw plugins install .
 ```
 
-OpenClaw plugin entry:
+OpenClaw also supports installing from a local checkout path:
+
+```bash
+openclaw plugins install /absolute/path/to/WeClawBot-ex
+```
+
+## Minimal OpenClaw Config
+
+Add or merge the following into your OpenClaw config:
 
 ```json
 {
@@ -47,15 +66,25 @@ OpenClaw plugin entry:
 }
 ```
 
+## Start Flow
+
+1. Start your OpenClaw Gateway.
+2. Open `http://127.0.0.1:19120/`.
+3. Click `+ Add Weixin`.
+4. Scan the QR code in Weixin and confirm on phone.
+5. Restart Gateway after scan success.
+6. Send the first message from that Weixin account to establish `context_token`.
+
+## User-Facing Notes
+
+- The web console is local-only by default: `http://127.0.0.1:19120/`
+- This MVP still requires a manual `openclaw gateway restart` after login
+- `-14` means the current Weixin bot session is cooling down; the page shows that state
+- One real Weixin account can accumulate multiple historical bot sessions after repeated re-login
+
 ## Local Control Page
 
-Default URL:
-
-```text
-http://127.0.0.1:19120/
-```
-
-Available endpoints:
+Endpoints exposed by the demo service:
 
 - `GET /`
 - `GET /api/health`
@@ -66,22 +95,9 @@ Available endpoints:
 - `GET /api/errors`
 - `POST /api/gateway/restart`
 
-## MVP Flow
+## Current Limits
 
-1. Open the local control page.
-2. Create a QR code.
-3. Scan with Weixin and complete confirmation.
-4. Restart Gateway with the command shown by the page.
-5. Send one first message from the Weixin user to establish the `context_token`.
-6. Wait for replies from the agent.
-
-## Isolation
-
-- First-release recommendation: keep a single agent, but set `session.dmScope` to `per-account-channel-peer`.
-- This isolates DM session history per Weixin account and per sender without introducing one-agent-per-account management overhead.
-
-## Known Limits
-
-- Gateway restart is manual in MVP.
-- `errcode = -14` cooldown is visible but not auto-recovered.
-- The plugin vendors the current verified Weixin implementation; do not assume upstream package compatibility.
+- This repo is a forked plugin, not an addon on top of the upstream package
+- The current public repo does not yet include Codex / Claude Code backend integration
+- Gateway restart is still manual
+- This project does not include `moltApp` billing, order, or settlement integration

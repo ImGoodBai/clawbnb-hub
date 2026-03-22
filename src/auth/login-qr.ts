@@ -1,3 +1,6 @@
+// Based on @tencent-weixin/openclaw-weixin v1.0.2.
+// Modifications: multi-session QR management and login snapshot/status helpers.
+
 import { randomUUID } from "node:crypto";
 
 import { loadConfigRouteTag } from "./accounts.js";
