@@ -39,7 +39,7 @@ export class WeixinDemoHttpServer {
 
   async start(): Promise<void> {
     if (!this.serviceConfig.enabled) {
-      this.logger.info("[molthuman-oc-plugin-wx] demo service disabled");
+      this.logger.info("[WeClawBot-ex] demo service disabled");
       return;
     }
     if (this.server) {
@@ -53,7 +53,7 @@ export class WeixinDemoHttpServer {
       this.server?.listen(this.serviceConfig.port, this.serviceConfig.bind, () => resolve());
     });
     this.logger.info(
-      `[molthuman-oc-plugin-wx] demo service listening on http://${this.serviceConfig.bind}:${this.serviceConfig.port}`,
+      `[WeClawBot-ex] demo service listening on http://${this.serviceConfig.bind}:${this.serviceConfig.port}`,
     );
   }
 
@@ -199,7 +199,7 @@ export class WeixinDemoHttpServer {
       this.respondJson(res, 404, { error: "not_found" });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`[molthuman-oc-plugin-wx] demo service error: ${message}`);
+      this.logger.error(`[WeClawBot-ex] demo service error: ${message}`);
       this.respondJson(res, 500, { error: message });
     }
   }

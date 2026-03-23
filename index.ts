@@ -9,8 +9,8 @@ import { createWeixinDemoService } from "./src/service/index.js";
 
 const plugin = {
   id: "molthuman-oc-plugin-wx",
-  name: "MoltHuman Weixin Demo",
-  description: "Weixin channel plus local demo control surface",
+  name: "WeClawBot-ex",
+  description: "WeClawBot-ex multi-account Weixin plugin with local control console",
   configSchema: buildChannelConfigSchema(WeixinDemoPluginConfigSchema),
   register(api: OpenClawPluginApi) {
     if (!api?.runtime) {

@@ -1,7 +1,7 @@
 {
   "id": "molthuman-oc-plugin-wx",
-  "name": "MoltHuman Weixin Demo",
-  "description": "Single-package Weixin demo plugin with local control page.",
+  "name": "WeClawBot-ex",
+  "description": "WeClawBot-ex multi-account Weixin plugin with local control page.",
   "channels": ["openclaw-weixin"],
   "configSchema": {
     "type": "object",

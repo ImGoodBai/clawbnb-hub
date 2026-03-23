@@ -31,6 +31,16 @@ cd WeClawBot-ex
 openclaw plugins install .
 ```
 
+### 命名说明
+
+当前版本为了兼容运行时，仍然保留下面这几套标识：
+
+- 产品名 / 仓库名：`WeClawBot-ex`
+- 插件包名 + 插件配置键：`molthuman-oc-plugin-wx`
+- 渠道配置键：`channels.openclaw-weixin`
+
+所以日志里如果同时出现这几个名字，不代表装错仓库，这是当前版本的兼容口径。
+
 ### 配置
 
 在 OpenClaw 配置中添加（`openclaw config edit`）：
@@ -69,6 +79,14 @@ openclaw plugins install .
 5. 用该微信发一条消息 — AI 智能体自动回复
 
 每添加一个微信号，重复第 3 步即可。
+
+## 排障
+
+- `WARNING: Plugin "... contains dangerous code patterns"` 当前在 OpenClaw 里只是告警，不会因为这条扫描提示直接拦截安装。
+- 如果看到 `npm install failed`，必须拿到完整 npm stderr 才能确认根因。
+- 先检查 `node -v`。当前插件要求 Node.js `>= 22`。
+- 再检查 `openclaw --version`。过旧的 OpenClaw 版本可能和当前插件不兼容。
+- 如果插件安装成功但管理端没起来，先确认 `channels.openclaw-weixin.demoService.enabled=true`，然后重启 Gateway。
 
 ## 工作原理
 

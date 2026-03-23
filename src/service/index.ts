@@ -11,7 +11,7 @@ export function createWeixinDemoService(_api: OpenClawPluginApi): OpenClawPlugin
     start: async (ctx) => {
       const config = resolveWeixinDemoServiceConfig(ctx.config);
       if (!config.enabled) {
-        ctx.logger.info("[molthuman-oc-plugin-wx] demo service disabled by config");
+        ctx.logger.info("[WeClawBot-ex] demo service disabled by config");
         return;
       }
       server = new WeixinDemoHttpServer({

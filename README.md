@@ -35,6 +35,16 @@ cd WeClawBot-ex
 openclaw plugins install .
 ```
 
+### Naming
+
+For compatibility, the current release still uses these runtime identifiers:
+
+- Product / repo name: `WeClawBot-ex`
+- Plugin package + plugin entry key: `molthuman-oc-plugin-wx`
+- Channel config key: `channels.openclaw-weixin`
+
+This is expected for the current version. A mixed-name log does not mean the wrong repository was installed.
+
 ### Configure
 
 Add to your OpenClaw config (`openclaw config edit`):
@@ -73,6 +83,14 @@ Add to your OpenClaw config (`openclaw config edit`):
 5. Send a message from that WeChat account — your AI agent replies
 
 Repeat step 3 for each additional WeChat account.
+
+## Troubleshooting
+
+- `WARNING: Plugin "... contains dangerous code patterns"` is currently warn-only in OpenClaw. It is a scanner warning, not the install blocker.
+- `npm install failed` needs the full npm stderr before the root cause can be confirmed.
+- Check `node -v` first. This plugin requires Node.js `>= 22`.
+- Check `openclaw --version` next. Older OpenClaw builds may be incompatible with this plugin revision.
+- If the plugin installs but the console does not open, verify `channels.openclaw-weixin.demoService.enabled=true` and restart Gateway.
 
 ## How It Works
 
