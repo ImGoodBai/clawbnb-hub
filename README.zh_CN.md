@@ -50,6 +50,13 @@ WeClawBot-ex 是基于官方 `@tencent-weixin/openclaw-weixin` 的产品化 fork
 - Node.js >= 22
 - 已安装 [OpenClaw](https://docs.openclaw.ai/install) `>= 2026.3.12`（`openclaw` 命令可用）
 
+### 兼容性说明
+
+- 当前已发布版本是 `weclawbot-ex@2026.3.24`。
+- 这个版本已经针对本机 OpenClaw `2026.3.14` 做过运行时兼容修复并完成实测。
+- 如果是新环境，建议优先使用 OpenClaw `2026.3.22+`，因为公开 npm 发布线已经推进到这一段。
+- 面向较新的 OpenClaw 版本，插件仍应继续使用显式 `plugin-sdk` 子路径，例如 `account-id`、`channel-config-schema`、`infra-runtime`、`media-runtime`、`command-auth`、`text-runtime`。上游 root `openclaw/plugin-sdk` 入口仍然是刻意收窄的。
+
 ### 安装
 
 ```bash
@@ -125,6 +132,8 @@ openclaw gateway
 - 如果看到 `npm install failed`，必须拿到完整 npm stderr 才能确认根因。
 - 先检查 `node -v`。当前插件要求 Node.js `>= 22`。
 - 再检查 `openclaw --version`。当前版本目标兼容范围是 OpenClaw `>= 2026.3.12`。
+- 如果你当前跑的是 OpenClaw `2026.3.14`，先确认插件已经升级到 `weclawbot-ex@2026.3.24` 或更高，再去排查消息链路。更早的插件版本可能会因为 host runtime 不从 root `plugin-sdk` 暴露某些 helper 而在运行时直接报错。
+- 如果后面再升级 OpenClaw，重新执行一次 `openclaw plugins install .`，并至少用一条真实微信消息做收发回归。上游当前的 SDK 演进方向仍然是“显式子路径”，不是把 helper 回收到 root barrel。
 - 如果你刚从 GitHub 拉了新代码，还要重新执行一次 `openclaw plugins install .`。OpenClaw 实际运行的是 `~/.openclaw/extensions` 里的已安装副本，不是当前工作目录。
 - 如果插件安装成功但管理端没起来，先确认 `channels.openclaw-weixin.demoService.enabled=true`，然后重启 Gateway。
 - 如果管理端还是起不来，再确认本地没有同时安装官方 `openclaw-weixin` 插件。

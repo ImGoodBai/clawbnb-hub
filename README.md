@@ -50,6 +50,13 @@ Two phones, one Gateway, two dedicated agents.
 - Node.js >= 22
 - [OpenClaw](https://docs.openclaw.ai/install) `>= 2026.3.12` installed (`openclaw` CLI available)
 
+### Compatibility Notes
+
+- `weclawbot-ex@2026.3.24` is the current published release.
+- This release was runtime-verified against local OpenClaw `2026.3.14` after the plugin-sdk compatibility hotfix.
+- For fresh installs, prefer OpenClaw `2026.3.22+` when possible, because the public npm release line has already moved there.
+- On newer OpenClaw builds, keep using explicit plugin-sdk subpaths such as `account-id`, `channel-config-schema`, `infra-runtime`, `media-runtime`, `command-auth`, and `text-runtime`. The root `openclaw/plugin-sdk` entry remains intentionally narrow upstream.
+
 ### Install
 
 ```bash
@@ -125,6 +132,8 @@ Repeat step 3 for each additional WeChat account.
 - `npm install failed` needs the full npm stderr before the root cause can be confirmed.
 - Check `node -v` first. This plugin requires Node.js `>= 22`.
 - Check `openclaw --version` next. The current release targets OpenClaw `>= 2026.3.12`.
+- If you are running OpenClaw `2026.3.14`, upgrade to `weclawbot-ex@2026.3.24` or newer before debugging message delivery. Older plugin builds can fail at runtime because some helpers are not exported from the root `plugin-sdk` entry on that host version.
+- If you upgrade OpenClaw later, re-run `openclaw plugins install .` and verify one real inbound/outbound message roundtrip. Upstream still evolves the SDK around explicit subpaths, not the root barrel.
 - After pulling a newer GitHub revision, run `openclaw plugins install .` again. OpenClaw runs the installed copy under `~/.openclaw/extensions`, not your working tree directly.
 - If the plugin installs but the console does not open, verify `channels.openclaw-weixin.demoService.enabled=true` and restart Gateway.
 - If the console still fails to boot, make sure the official `openclaw-weixin` plugin is not installed at the same time in the same OpenClaw profile.
