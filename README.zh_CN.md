@@ -11,10 +11,11 @@ WeClawBot-ex 是基于官方 `@tencent-weixin/openclaw-weixin` 的产品化 fork
 | | 官方 `openclaw-weixin` | WeClawBot-ex |
 |---|---|---|
 | 多账号运行 | 底层支持，主要通过 CLI | 支持，并提供统一 Web 控制台 |
+| Agent 绑定 | 主要靠人工约定或共享模式 | 默认一微信对应一个独立 agent |
 | 扫码体验 | 终端输出 | 浏览器二维码 + 实时状态卡片 |
 | 账号状态可观测 | 主要靠日志和本地状态 | 面板聚合展示 + 重扫入口 |
 | 冷却诊断 | 需手动排查 | 内置 `-14` 冷却可见 |
-| 会话隔离 | 需手动配置 `dmScope` | 首次绑定时自动升级到 `per-account-channel-peer` |
+| 聊天隔离 | 需要额外手动配置 | 默认开启 |
 
 ## 当前版本能力
 
@@ -23,7 +24,7 @@ WeClawBot-ex 是基于官方 `@tencent-weixin/openclaw-weixin` 的产品化 fork
 - 多个微信账号接入同一个 OpenClaw Gateway
 - 默认一个微信对应一个 OpenClaw agent
 - 本地控制台统一管理二维码登录和渠道状态
-- 通过 `dmScope=per-account-channel-peer` 做账号级 DM 会话隔离
+- 默认隔离聊天上下文
 - 扫码确认后自动触发 channel reload，失败时再手动重启兜底
 
 本次版本不处理旧共享模式测试数据迁移。如果你是从早期私有版本升级，建议直接重新扫码接入。
@@ -63,25 +64,6 @@ openclaw gateway
 
 然后打开 **http://127.0.0.1:19120/**。
 
-### 推荐配置
-
-默认零配置即可启动。如果你希望把行为显式写死，再补下面这段：
-
-```json
-{
-  "session": {
-    "dmScope": "per-account-channel-peer"
-  },
-  "channels": {
-    "openclaw-weixin": {
-      "agentBinding": {
-        "maxAgents": 20
-      }
-    }
-  }
-}
-```
-
 ### 配置参考
 
 插件级配置写在 `openclaw.json` 的 `channels.openclaw-weixin` 下。
@@ -97,12 +79,6 @@ openclaw gateway
 | `baseUrl` | `string` | `https://ilinkai.weixin.qq.com` | 微信 iLink API 地址 |
 | `cdnBaseUrl` | `string` | `https://novac2c.cdn.weixin.qq.com/c2c` | 媒体 CDN 地址 |
 | `logUploadUrl` | `string` | `-` | 可选日志上传地址 |
-
-Gateway 级配置写在 `openclaw.json` 顶层。
-
-| 字段 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `session.dmScope` | `string` | 自动设为 `per-account-channel-peer` | 私聊会话隔离级别，正常情况下不需要手动修改 |
 
 ### 使用
 
@@ -154,17 +130,15 @@ npm run test:gate:full
 ## 工作原理
 
 ```
-微信用户 A -> 微信账号 A -> Agent A
-微信用户 B -> 微信账号 B -> Agent B
-微信用户 C -> 微信账号 C -> Agent C
-                         |
-                         └──< 回复各自的微信用户
+微信 A <-> WeClawBot-ex <-> OpenClaw Agent A
+微信 B <-> WeClawBot-ex <-> OpenClaw Agent B
+微信 C <-> WeClawBot-ex <-> OpenClaw Agent C
 ```
 
 - 基于官方 `@tencent-weixin/openclaw-weixin` 插件 (v1.0.2) 的 fork
 - 扩展了 QR 登录模块，支持多会话并发管理
 - 新增本地 Web 管理界面（`src/service/`）
-- 在 `dmScope=per-account-channel-peer` 下，每个微信账号有独立 DM 会话
+- 默认每个微信账号的聊天上下文分开
 - 每个稳定微信用户默认固定绑定到独立 OpenClaw agent
 - agent workspace 会随 agent id 分开
 - 当前版本的 tools、副作用运行环境在宿主层仍然共享
@@ -208,6 +182,19 @@ npm run test:gate:full
 ### 当前是不是一微信对应一个 agent？
 
 是，当前仓库默认就是。共享 agent 只作为独立绑定失败时的兜底；更彻底的 workspace/tool 隔离仍然在后续阶段。
+
+## 更新记录
+
+完整变更记录见 [CHANGELOG.zh_CN.md](./CHANGELOG.zh_CN.md)。
+
+### 2026.3.23
+
+- 默认一微信一 Agent：每个微信用户默认绑定独立 Agent，聊天内容不再串线
+- 零配置启动：安装后直接 `openclaw gateway`，会话隔离和 Agent 绑定自动生效
+- 重扫不丢绑定：同一微信重新扫码后，仍然回到之前绑定的 Agent
+- 配置参考表：README 新增全部可配字段说明
+- 架构文档和 FAQ：正面回答“和官方插件什么区别”“数据隔离到哪一层”
+- 自动化质量门：`npm run test:gate` 覆盖绑定逻辑、QR 流程和控制台渲染
 
 ## 许可证
 

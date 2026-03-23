@@ -6,12 +6,12 @@ Current public releases of WeClawBot-ex support two routing modes:
 
 ```text
 Default mode:
-WeChat User A -> Weixin Account A -> Agent A
-WeChat User B -> Weixin Account B -> Agent B
-WeChat User C -> Weixin Account C -> Agent C
+WeChat A <-> WeClawBot-ex <-> OpenClaw Agent A
+WeChat B <-> WeClawBot-ex <-> OpenClaw Agent B
+WeChat C <-> WeClawBot-ex <-> OpenClaw Agent C
 
 Fallback mode:
-WeChat User X -> main
+WeChat X <-> WeClawBot-ex <-> main
 ```
 
 This means:
@@ -20,7 +20,7 @@ This means:
 - multiple WeChat channel accounts
 - one dedicated OpenClaw agent per stable WeChat user by default
 - shared `main` agent only as a fallback path
-- DM session isolation through `dmScope=per-account-channel-peer`
+- chat context separated by default
 
 ## What WeClawBot-ex Adds
 
@@ -44,7 +44,7 @@ WeClawBot-ex focuses on management, operator workflow, and productization.
 - account credentials are stored per account
 - each account runs its own long-poll monitor
 - `context_token` is tracked per account / user pair
-- DM session keys can be isolated by `accountId + peer`
+- chat context is separated per WeChat account
 - dedicated agent routing is enabled per stable WeChat user by default
 - agent workspace separates naturally by agent id
 

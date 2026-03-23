@@ -11,10 +11,11 @@ WeClawBot-ex is a productized fork of the official `@tencent-weixin/openclaw-wei
 | | Official `openclaw-weixin` | WeClawBot-ex |
 |---|---|---|
 | Multi-account runtime | Supported, mainly via CLI workflow | Supported, with one local web console |
+| Agent mapping | Shared/manual operator setup | Default one WeChat -> one dedicated agent |
 | QR login experience | Terminal output | Browser QR with live status cards |
 | Account visibility | Mainly logs and local state | Aggregated dashboard and relogin actions |
 | Cooldown diagnostics | Manual inspection | Built-in `-14` visibility |
-| Session isolation | Requires manual `dmScope` configuration | Auto-upgrades to `per-account-channel-peer` on first bind |
+| Chat isolation | Requires extra manual configuration | Enabled by default |
 
 ## Current Status
 
@@ -23,7 +24,7 @@ The current public release supports:
 - multiple WeChat accounts connected to one OpenClaw Gateway
 - one WeChat account mapped to one OpenClaw agent by default
 - a local control console for QR login and channel management
-- account-level DM session isolation via `dmScope=per-account-channel-peer`
+- isolated chat context by default
 - auto-triggered channel reload after QR confirmation, with manual restart fallback
 
 Older shared-agent test data is not migrated in this release. Reconnect old accounts if you are upgrading from an earlier private build.
@@ -67,25 +68,6 @@ openclaw gateway
 
 Then open **http://127.0.0.1:19120/**.
 
-### Recommended Config
-
-Zero-config startup is supported. If you want to pin the behavior explicitly, add this to your OpenClaw config:
-
-```json
-{
-  "session": {
-    "dmScope": "per-account-channel-peer"
-  },
-  "channels": {
-    "openclaw-weixin": {
-      "agentBinding": {
-        "maxAgents": 20
-      }
-    }
-  }
-}
-```
-
 ### Configuration Reference
 
 Plugin config lives under `channels.openclaw-weixin` in `openclaw.json`.
@@ -101,12 +83,6 @@ Plugin config lives under `channels.openclaw-weixin` in `openclaw.json`.
 | `baseUrl` | `string` | `https://ilinkai.weixin.qq.com` | Weixin iLink API endpoint |
 | `cdnBaseUrl` | `string` | `https://novac2c.cdn.weixin.qq.com/c2c` | Media CDN endpoint |
 | `logUploadUrl` | `string` | `-` | Optional log upload endpoint |
-
-Gateway-level config lives at the root of `openclaw.json`.
-
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `session.dmScope` | `string` | Auto-set to `per-account-channel-peer` | Direct-message isolation mode; normally no manual change is needed |
 
 ### Use
 
@@ -158,17 +134,15 @@ Current automated coverage focuses on:
 ## How It Works
 
 ```
-WeChat User A -> Weixin Account A -> Agent A
-WeChat User B -> Weixin Account B -> Agent B
-WeChat User C -> Weixin Account C -> Agent C
-                             |
-                             └──< Reply to each WeChat user
+WeChat A <-> WeClawBot-ex <-> OpenClaw Agent A
+WeChat B <-> WeClawBot-ex <-> OpenClaw Agent B
+WeChat C <-> WeClawBot-ex <-> OpenClaw Agent C
 ```
 
 - Fork of the official `@tencent-weixin/openclaw-weixin` plugin (v1.0.2)
 - Extends the QR login module to support concurrent multi-session management
 - Adds a local web console (`src/service/`) for visual channel management
-- Each WeChat account gets isolated DM sessions when `dmScope=per-account-channel-peer`
+- Chat context is separated by default for each WeChat account
 - Each stable WeChat user is bound to one dedicated OpenClaw agent by default
 - Agent workspace is separated by agent id
 - Tool/runtime side effects are still shared at the host level
@@ -212,6 +186,19 @@ Not fully. One WeChat account now maps to one dedicated OpenClaw agent by defaul
 ### Is one WeChat account mapped to one agent today?
 
 Yes. That is now the default behavior of this repo. Shared-agent mode only remains as a compatibility fallback when dedicated binding cannot be completed.
+
+## Release Notes
+
+Full history: [CHANGELOG.md](./CHANGELOG.md).
+
+### 2026.3.23
+
+- Default one-WeChat-one-agent: each WeChat user binds to a dedicated agent by default
+- Zero-config startup: `openclaw gateway` is enough for first run; session isolation and agent binding auto-apply
+- Re-login keeps the same agent: rescanning the same WeChat account preserves the previous binding
+- Configuration reference: README now lists all supported config fields and defaults
+- Architecture + FAQ: public docs now explain official-plugin differences and the current isolation boundary
+- Automated quality gate: `npm run test:gate` covers binding logic, QR flow, and control-page rendering
 
 ## License
 

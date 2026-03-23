@@ -11,7 +11,7 @@
 - 用于解释官方插件关系和隔离边界的架构文档与 FAQ
 - 默认的一微信一 agent 绑定能力：`userId -> agentId` 映射与独立 agent 注册
 - 针对 `agents.list` + `bindings` 写入的 dedicated binding 单测与 smoke 测试
-- 首次绑定时自动把 `dmScope` 升级到 `per-account-channel-peer`
+- 首次绑定时自动完成安全的聊天隔离设置
 
 ### 变更
 
