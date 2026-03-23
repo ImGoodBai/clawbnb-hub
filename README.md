@@ -94,6 +94,28 @@ Repeat step 3 for each additional WeChat account.
 - If the plugin installs but the console does not open, verify `channels.openclaw-weixin.demoService.enabled=true` and restart Gateway.
 - If QR login succeeds but the new account does not receive messages, first wait for auto refresh, then use the manual restart command shown in the diagnostics panel.
 
+## Quality Gate
+
+Run these before opening or merging a change:
+
+```bash
+npm run test:unit
+npm run test:smoke
+npm run test:gate
+npm run test:gate:full
+```
+
+Current automated coverage focuses on:
+
+- config-triggered channel reload and manual fallback
+- account snapshot / isolation diagnostics
+- control page render smoke
+- local demo service health
+- mock QR login flow without real WeChat devices
+
+`test:gate` is the current default closeout gate for this standalone repo.
+`test:gate:full` additionally runs `typecheck`, which still depends on upstream-derived imports being fully self-contained.
+
 ## How It Works
 
 ```

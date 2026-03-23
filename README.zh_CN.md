@@ -90,6 +90,28 @@ openclaw plugins install .
 - 如果插件安装成功但管理端没起来，先确认 `channels.openclaw-weixin.demoService.enabled=true`，然后重启 Gateway。
 - 如果扫码已经成功，但新账号还是收不到消息，先等自动刷新完成；还不行再使用诊断面板里的手动重启命令。
 
+## 质量门
+
+在提交或合并变更前，至少执行：
+
+```bash
+npm run test:unit
+npm run test:smoke
+npm run test:gate
+npm run test:gate:full
+```
+
+当前自动化覆盖的重点是：
+
+- 配置触发式 channel reload 与手动降级
+- 账号聚合快照和会话隔离诊断
+- 控制台页面渲染 smoke
+- 本地 demo service 健康检查
+- 不依赖真实微信设备的 mock 二维码流程
+
+当前默认的关门命令是 `npm run test:gate`。
+`npm run test:gate:full` 会额外执行 `typecheck`，等仓库把上游派生导入彻底独立化后，再把它提升为默认门禁。
+
 ## 工作原理
 
 ```

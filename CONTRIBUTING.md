@@ -28,6 +28,15 @@ Before changing code, read these documents in order:
 2. State which files are frozen, which are controlled patch files, and why.
 3. Record the verification steps and rollback point.
 
+## Minimum verification
+
+Run these in the repository before opening a PR:
+
+1. `npm run test:unit`
+2. `npm run test:smoke`
+3. `npm run test:gate`
+4. `npm run test:gate:full` when the branch also updates upstream-derived imports or packaging behavior
+
 ## References
 
 1. Main collaboration baseline: `moltApp/docs/standards/OPENCLAW-PLUGIN-COLLABORATION-BASELINE.md`

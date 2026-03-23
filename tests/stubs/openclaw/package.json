@@ -1,0 +1,12 @@
+{
+  "name": "openclaw",
+  "version": "0.0.0-test-stub",
+  "type": "module",
+  "exports": {
+    "./plugin-sdk": "./plugin-sdk/index.js",
+    "./plugin-sdk/core": "./plugin-sdk/core.js",
+    "./plugin-sdk/infra-runtime": "./plugin-sdk/infra-runtime.js",
+    "./plugin-sdk/media-runtime": "./plugin-sdk/media-runtime.js"
+  }
+}
+
