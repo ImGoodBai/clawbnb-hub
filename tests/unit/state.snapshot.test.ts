@@ -52,23 +52,51 @@ describe("demo account snapshot", () => {
       token: "token-b-1",
       savedAt: "2026-03-23T08:00:00.000Z",
     });
+    fs.writeFileSync(
+      path.join(stateDir, "user-agent-map.json"),
+      JSON.stringify({
+        version: 1,
+        users: {
+          "user-a": {
+            userId: "user-a",
+            agentId: "wx-user-a",
+            activeAccountId: "wx-user-a-2",
+            historyAccountIds: ["wx-user-a-1", "wx-user-a-2"],
+            createdAt: "2026-03-23T09:00:00.000Z",
+            updatedAt: "2026-03-23T10:00:00.000Z",
+          },
+        },
+      }, null, 2),
+      "utf-8",
+    );
 
     pauseSession("wx-user-a-2");
 
     const snapshot = buildDemoAccountsSnapshot({
       session: { dmScope: "main" },
+      channels: {
+        "openclaw-weixin": {
+          agentBinding: {
+            enabled: true,
+            maxAgents: 20,
+          },
+        },
+      },
     } as never);
 
     expect(snapshot.summary.totalStoredRecords).toBe(3);
     expect(snapshot.summary.uniqueChannels).toBe(2);
     expect(snapshot.summary.duplicateChannelCount).toBe(1);
     expect(snapshot.summary.cooldownChannelCount).toBe(1);
+    expect(snapshot.summary.dedicatedAgentCount).toBe(1);
     expect(snapshot.channels[0]?.linkedAccountCount).toBe(2);
     expect(snapshot.channels[0]?.cooldownRecordCount).toBe(1);
+    expect(snapshot.channels[0]?.agentId).toBe("wx-user-a");
+    expect(snapshot.channels[0]?.bindingMode).toBe("dedicated");
+    expect(snapshot.channels[1]?.bindingMode).toBe("shared");
     expect(snapshot.diagnostics.some((item) => item.kind === "session-scope")).toBe(true);
     expect(snapshot.diagnostics.some((item) => item.kind === "duplicate")).toBe(true);
     expect(snapshot.diagnostics.some((item) => item.kind === "cooldown")).toBe(true);
     expect(snapshot.diagnostics.some((item) => item.kind === "missing-user-id")).toBe(true);
   });
 });
-

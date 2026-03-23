@@ -7,6 +7,10 @@ import {
   loadWeixinAccount,
 } from "../auth/accounts.js";
 import { getRemainingPauseMs, isSessionPaused, SESSION_EXPIRED_ERRCODE } from "../api/session-guard.js";
+import {
+  getWeixinUserAgentBinding,
+  resolveWeixinAgentBindingConfig,
+} from "./user-agent-binding.js";
 import { logger } from "../util/logger.js";
 
 export type DemoAccountRecord = {
@@ -35,6 +39,11 @@ export type DemoChannelSummary = {
   cooldownRemainingMinutes: number;
   cooldownRecordCount: number;
   cooldownErrcode?: number;
+  agentId: string;
+  bindingMode: "dedicated" | "shared";
+  bindingEnabled: boolean;
+  bindingFallback: boolean;
+  bindingReason?: string;
   records: DemoAccountRecord[];
 };
 
@@ -57,6 +66,7 @@ export type DemoAccountsSnapshot = {
     uniqueChannels: number;
     duplicateChannelCount: number;
     cooldownChannelCount: number;
+    dedicatedAgentCount: number;
   };
   isolation: DemoIsolationState;
   channels: DemoChannelSummary[];
@@ -159,6 +169,7 @@ function buildIsolationState(cfg?: OpenClawConfig): DemoIsolationState {
 export function buildDemoAccountsSnapshot(cfg?: OpenClawConfig): DemoAccountsSnapshot {
   const records = buildAccountRecords();
   const isolation = buildIsolationState(cfg);
+  const agentBinding = resolveWeixinAgentBindingConfig(cfg);
   const grouped = new Map<string, DemoAccountRecord[]>();
 
   for (const record of records) {
@@ -173,6 +184,11 @@ export function buildDemoAccountsSnapshot(cfg?: OpenClawConfig): DemoAccountsSna
       const sortedRecords = [...channelRecords].sort(compareSavedAtDesc);
       const primary = sortedRecords[0];
       const cooldownRecordCount = sortedRecords.filter((record) => record.cooldownActive).length;
+      const binding = getWeixinUserAgentBinding({
+        userId: primary.userId,
+        accountId: primary.accountId,
+        config: cfg,
+      });
       return {
         channelKey,
         identityLabel: primary.userLabel,
@@ -186,6 +202,11 @@ export function buildDemoAccountsSnapshot(cfg?: OpenClawConfig): DemoAccountsSna
         cooldownRemainingMinutes: primary.cooldownRemainingMinutes,
         cooldownRecordCount,
         cooldownErrcode: primary.cooldownActive ? primary.cooldownErrcode : undefined,
+        agentId: binding.agentId,
+        bindingMode: binding.mode,
+        bindingEnabled: binding.enabled,
+        bindingFallback: binding.fallback,
+        bindingReason: binding.reason,
         records: sortedRecords,
       } satisfies DemoChannelSummary;
     })
@@ -200,6 +221,18 @@ export function buildDemoAccountsSnapshot(cfg?: OpenClawConfig): DemoAccountsSna
       title: "Shared main session mode",
       message: `Direct messages currently share one main agent session (dmScope=${isolation.dmScope}). Use per-account-channel-peer before running multiple Weixin accounts in one Gateway.`,
     });
+  }
+
+  if (agentBinding.enabled) {
+    const fallbackChannels = channels.filter((channel) => channel.bindingFallback);
+    if (fallbackChannels.length > 0) {
+      diagnostics.push({
+        kind: "missing-user-id",
+        severity: "warn",
+        title: "Some channels still use the shared agent",
+        message: `${fallbackChannels.length} channel(s) are still routed to ${fallbackChannels[0]?.agentId ?? "main"} because dedicated agent binding could not be completed.`,
+      });
+    }
   }
 
   for (const channel of channels) {
@@ -235,6 +268,7 @@ export function buildDemoAccountsSnapshot(cfg?: OpenClawConfig): DemoAccountsSna
       uniqueChannels: channels.length,
       duplicateChannelCount: channels.filter((channel) => channel.duplicateRecordCount > 0).length,
       cooldownChannelCount: channels.filter((channel) => channel.cooldownRecordCount > 0).length,
+      dedicatedAgentCount: channels.filter((channel) => channel.bindingMode === "dedicated").length,
     },
     isolation,
     channels,

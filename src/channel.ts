@@ -9,12 +9,12 @@ import {
   saveWeixinAccount,
   listWeixinAccountIds,
   resolveWeixinAccount,
-  triggerWeixinChannelReload,
   DEFAULT_BASE_URL,
 } from "./auth/accounts.js";
 import type { ResolvedWeixinAccount } from "./auth/accounts.js";
 import { assertSessionActive } from "./api/session-guard.js";
 import { getContextToken } from "./messaging/inbound.js";
+import { resolveOrRegisterWeixinUserAgent } from "./service/user-agent-binding.js";
 import { logger } from "./util/logger.js";
 import {
   DEFAULT_ILINK_BOT_TYPE,
@@ -263,8 +263,17 @@ export const weixinPlugin: ChannelPlugin<ResolvedWeixinAccount> = {
             userId: waitResult.userId,
           });
           registerWeixinAccountId(normalizedId);
-          const reload = await triggerWeixinChannelReload();
-          if (!reload.ok) {
+          const binding = await resolveOrRegisterWeixinUserAgent({
+            userId: waitResult.userId,
+            accountId: normalizedId,
+            config: cfg,
+          });
+          if (binding.mode === "dedicated" && !binding.fallback) {
+            log(`🔐 已绑定独立 Agent: ${binding.agentId}`);
+          } else if (binding.reason) {
+            log(`ℹ️  当前继续使用共享 Agent: ${binding.reason}`);
+          }
+          if (!binding.activation.ok) {
             log(`⚠️  自动刷新通道失败，请手动执行: openclaw gateway restart`);
           }
           log(`\n✅ 与微信连接成功！`);
@@ -366,9 +375,13 @@ export const weixinPlugin: ChannelPlugin<ResolvedWeixinAccount> = {
             userId: result.userId,
           });
           registerWeixinAccountId(normalizedId);
-          const reload = await triggerWeixinChannelReload();
+          const binding = await resolveOrRegisterWeixinUserAgent({
+            userId: result.userId,
+            accountId: normalizedId,
+            config: (params as { cfg?: OpenClawConfig }).cfg,
+          });
           logger.info(
-            `loginWithQrWait: saved account data for accountId=${normalizedId} reloadMode=${reload.mode} triggered=${reload.triggered}`,
+            `loginWithQrWait: saved account data for accountId=${normalizedId} bindingMode=${binding.mode} reloadMode=${binding.activation.mode} triggered=${binding.activation.triggered}`,
           );
         } catch (err) {
           logger.error(`loginWithQrWait: failed to save account data err=${String(err)}`);

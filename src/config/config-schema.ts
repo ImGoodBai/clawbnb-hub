@@ -32,6 +32,12 @@ const DemoServiceSchema = z.object({
   reloadNonce: z.string().optional(),
 });
 
+const AgentBindingSchema = z.object({
+  enabled: z.boolean().optional(),
+  maxAgents: z.number().int().min(1).max(200).optional(),
+});
+
 export const WeixinDemoPluginConfigSchema = WeixinConfigSchema.extend({
   demoService: DemoServiceSchema.optional(),
+  agentBinding: AgentBindingSchema.optional(),
 });

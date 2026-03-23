@@ -10,7 +10,7 @@ import { createTempOpenClawEnv } from "../helpers/temp-env.js";
 
 let env: ReturnType<typeof createTempOpenClawEnv>;
 
-describe("weixin config-triggered reload", () => {
+describe("weixin config-triggered reload status", () => {
   beforeEach(() => {
     env = createTempOpenClawEnv();
   });
@@ -19,7 +19,7 @@ describe("weixin config-triggered reload", () => {
     env.cleanup();
   });
 
-  it("reports auto mode and writes reloadNonce into demoService", async () => {
+  it("reports auto mode without mutating config directly", async () => {
     const status = getWeixinChannelReloadStatus();
     expect(status.mode).toBe("auto");
     expect(status.ok).toBe(true);
@@ -27,18 +27,7 @@ describe("weixin config-triggered reload", () => {
     const result = await triggerWeixinChannelReload();
     expect(result.mode).toBe("auto");
     expect(result.ok).toBe(true);
-    expect(result.triggered).toBe(true);
-
-    const updated = JSON.parse(fs.readFileSync(env.configPath, "utf-8")) as {
-      channels?: {
-        "openclaw-weixin"?: {
-          demoService?: { reloadNonce?: string };
-        };
-      };
-    };
-    expect(updated.channels?.["openclaw-weixin"]?.demoService?.reloadNonce).toMatch(
-      /^\d{4}-\d{2}-\d{2}T/,
-    );
+    expect(result.triggered).toBe(false);
   });
 
   it("falls back to manual mode when config is not valid JSON", async () => {
@@ -55,4 +44,3 @@ describe("weixin config-triggered reload", () => {
     expect(result.reason).toContain("valid JSON");
   });
 });
-

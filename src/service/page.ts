@@ -488,7 +488,7 @@ export function renderDemoPage(): string {
         <div class="section-head">
           <div>
             <h2>已接入微信</h2>
-            <p>每张卡片就是一个已经登录的微信。登录后，同一个机器人就可以同时服务多个微信。</p>
+            <p>每张卡片就是一个已经登录的微信。开启独立绑定后，每个微信会固定对应自己的 Agent。</p>
           </div>
           <button id="add-channel" class="primary" type="button">+ 添加微信</button>
         </div>
@@ -765,6 +765,9 @@ export function renderDemoPage(): string {
           const badgeText = channel.cooldownActive
             ? ("暂时受限 · " + channel.cooldownRemainingMinutes + " 分钟")
             : "正常";
+          const bindingLabel = channel.bindingMode === "dedicated"
+            ? "独立 Agent"
+            : "共享 Agent";
           const history = channel.records.map((record, recordIndex) => {
             const stateBadge = record.cooldownActive
               ? '<span class="badge danger">暂时受限 · ' + escapeHtml(record.cooldownRemainingMinutes) + ' 分钟</span>'
@@ -786,11 +789,17 @@ export function renderDemoPage(): string {
             '<div class="channel-meta-grid">' +
               '<div class="meta-item"><span>最近登录</span><strong>' + escapeHtml(formatTime(channel.latestSavedAt)) + '</strong></div>' +
               '<div class="meta-item"><span>历史登录</span><strong>' + escapeHtml(channel.linkedAccountCount) + ' 条</strong></div>' +
+              '<div class="meta-item"><span>当前 Agent</span><strong>' + escapeHtml(channel.agentId) + '</strong></div>' +
+              '<div class="meta-item"><span>路由模式</span><strong>' + escapeHtml(bindingLabel) + '</strong></div>' +
             '</div>' +
             '<p class="channel-note">' +
-              escapeHtml(channel.duplicateRecordCount > 0
-                ? ("这个微信之前重复登录过 " + channel.duplicateRecordCount + " 次，旧记录已经自动收起。")
-                : "这个微信当前只有一条登录记录。") +
+              escapeHtml(channel.bindingFallback && channel.bindingReason
+                ? ("当前仍在使用共享 Agent：" + channel.bindingReason + "。")
+                : channel.bindingMode === "dedicated"
+                  ? "这个微信当前已固定绑定到独立 Agent。"
+                  : (channel.duplicateRecordCount > 0
+                    ? ("这个微信之前重复登录过 " + channel.duplicateRecordCount + " 次，旧记录已经自动收起。")
+                    : "这个微信当前只有一条登录记录。")) +
             '</p>' +
             '<div class="channel-actions">' +
               '<button class="ghost" data-relogin="' + escapeHtml(channel.primaryAccountId) + '">重新扫码</button>' +
@@ -888,9 +897,11 @@ export function renderDemoPage(): string {
             stopPolling();
             activeSessionKey = null;
             setSessionMeta(
-              data.activation && data.activation.mode === "auto" && data.activation.available
-                ? "接入成功。自动刷新请求已发送，等待几秒后让该微信先发第一句话。"
-                : "接入成功，但自动刷新没有生效。请手动重启网关，再让该微信先发第一句话。",
+              data.binding && data.binding.mode === "dedicated" && !data.binding.fallback
+                ? ("接入成功。已绑定独立 Agent：" + data.binding.agentId + "。")
+                : data.activation && data.activation.mode === "auto" && data.activation.available
+                  ? "接入成功。自动刷新请求已发送，等待几秒后让该微信先发第一句话。"
+                  : "接入成功，但自动刷新没有生效。请手动重启网关，再让该微信先发第一句话。",
             );
             await refreshDashboard();
             setTimeout(() => closeDialog("channel-modal"), 900);

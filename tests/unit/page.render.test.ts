@@ -10,6 +10,6 @@ describe("demo page render", () => {
     expect(page).toContain("/api/health");
     expect(page).toContain("自动刷新");
     expect(page).toContain("添加微信");
+    expect(page).toContain("独立 Agent");
   });
 });
-

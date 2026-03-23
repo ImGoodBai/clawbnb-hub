@@ -21,11 +21,12 @@ WeClawBot-ex 是基于官方 `@tencent-weixin/openclaw-weixin` 的产品化 fork
 当前公开版本已经支持：
 
 - 多个微信账号接入同一个 OpenClaw Gateway
+- 默认一个微信对应一个 OpenClaw agent
 - 本地控制台统一管理二维码登录和渠道状态
 - 通过 `dmScope=per-account-channel-peer` 做账号级 DM 会话隔离
 - 扫码确认后自动触发 channel reload，失败时再手动重启兜底
 
-当前版本**还没有**做到“一微信一 agent”。这属于下一阶段的大版本能力。
+本次版本不处理旧共享模式测试数据迁移。如果你是从早期私有版本升级，建议直接重新扫码接入。
 
 ## 快速开始
 
@@ -52,29 +53,29 @@ openclaw plugins install .
 
 所以日志里如果同时出现这几个名字，不代表装错仓库，这是当前版本的兼容口径。
 
-### 配置
+### 运行
 
-在 OpenClaw 配置中添加（`openclaw config edit`）：
+默认安装完成后，不需要再手工写一大段配置就能启动：
+
+```bash
+openclaw gateway
+```
+
+然后打开 **http://127.0.0.1:19120/**。
+
+### 推荐配置
+
+如果你希望把隔离模式显式写死，再补下面这段：
 
 ```json
 {
   "session": {
     "dmScope": "per-account-channel-peer"
   },
-  "plugins": {
-    "entries": {
-      "molthuman-oc-plugin-wx": {
-        "enabled": true,
-        "package": "molthuman-oc-plugin-wx"
-      }
-    }
-  },
   "channels": {
     "openclaw-weixin": {
-      "baseUrl": "https://ilinkai.weixin.qq.com",
-      "demoService": {
-        "enabled": true,
-        "port": 19120
+      "agentBinding": {
+        "maxAgents": 20
       }
     }
   }
@@ -88,7 +89,7 @@ openclaw plugins install .
 3. 点击 **添加微信渠道** — 用微信扫码并在手机上确认
 4. 扫码成功后等待几秒，插件会尝试自动刷新微信通道
 5. 如果新账号仍然没有上线，再执行 `openclaw gateway restart`
-6. 用该微信发一条消息 — AI 智能体自动回复
+6. 用该微信发一条消息 — 对应绑定的 AI agent 自动回复
 
 每添加一个微信号，重复第 3 步即可。
 
@@ -131,24 +132,25 @@ npm run test:gate:full
 ## 工作原理
 
 ```
-微信用户 A ──┐
-微信用户 B ──┤──> WeClawBot-ex（多账号插件）
-微信用户 C ──┘         |
-                       |──> 共享 OpenClaw 智能体
-                       |         |
-                       └──< 回复各自的微信用户
+微信用户 A -> 微信账号 A -> Agent A
+微信用户 B -> 微信账号 B -> Agent B
+微信用户 C -> 微信账号 C -> Agent C
+                         |
+                         └──< 回复各自的微信用户
 ```
 
 - 基于官方 `@tencent-weixin/openclaw-weixin` 插件 (v1.0.2) 的 fork
 - 扩展了 QR 登录模块，支持多会话并发管理
 - 新增本地 Web 管理界面（`src/service/`）
 - 在 `dmScope=per-account-channel-peer` 下，每个微信账号有独立 DM 会话
-- 当前版本的 agent workspace、tools、副作用运行环境仍然共享
+- 每个稳定微信用户默认固定绑定到独立 OpenClaw agent
+- agent workspace 会随 agent id 分开
+- 当前版本的 tools、副作用运行环境在宿主层仍然共享
 
 如果你重点关心“数据会不会串”，请直接看 [docs/architecture.md](./docs/architecture.md)。简化口径是：
 
-- 当前：共享 agent，隔离聊天 session
-- 下一阶段：一微信一 agent
+- 默认：一微信一 agent
+- 兜底：只有在独立绑定失败时才退回共享 `main`
 - 后续：更彻底的 workspace / tools / runtime 隔离
 
 ## 维护边界
@@ -161,22 +163,15 @@ npm run test:gate:full
 
 ### 更强的隔离能力
 
-- [ ] 一微信一 Agent
-- [ ] 每个 Agent 独立 workspace
+- [x] 一微信一 Agent
 - [ ] Tool / runtime side-effect 隔离
-- [ ] 租户边界硬化
+- [ ] 更硬的租户边界
 
 ### 商业化分发
 
 - [ ] 可分享二维码（扫码即接入）
 - [ ] 按微信入口计费
 - [ ] 插件付费分发与商业化工作流
-
-### 核心运行能力
-
-- [ ] 群聊 @bot 模式
-- [ ] 媒体消息支持（图片、文件、语音）
-- [ ] 精确到单账号的热启动（不再依赖 channel 级 reload）
 
 ## 常见问题
 
@@ -186,11 +181,11 @@ npm run test:gate:full
 
 ### 现在的数据隔离到哪一层？
 
-当前主要解决的是聊天上下文串线问题，不是完整租户级硬隔离。也就是说，DM session 已隔离，但 agent workspace、tools 和运行副作用还没有完全隔离。
+当前默认已经是一微信一 agent，而且 agent workspace 会随 agent id 分开。但这还不是完整租户级硬隔离，因为 tools 和运行副作用还没有完全隔离。
 
 ### 当前是不是一微信对应一个 agent？
 
-还不是。当前多个微信仍然可以共享同一个 OpenClaw agent，只是会话分开。`一微信一 agent` 是下一阶段主任务。
+是，当前仓库默认就是。共享 agent 只作为独立绑定失败时的兜底；更彻底的 workspace/tool 隔离仍然在后续阶段。
 
 ## 许可证
 

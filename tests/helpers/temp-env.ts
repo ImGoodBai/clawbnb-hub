@@ -18,6 +18,10 @@ const DEFAULT_CONFIG = {
   channels: {
     "openclaw-weixin": {
       baseUrl: "https://ilinkai.weixin.qq.com",
+      agentBinding: {
+        enabled: true,
+        maxAgents: 20,
+      },
       demoService: {
         enabled: true,
         bind: "127.0.0.1",
@@ -89,4 +93,3 @@ export async function findFreePort(): Promise<number> {
     });
   });
 }
-

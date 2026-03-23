@@ -9,7 +9,6 @@ import {
   loadWeixinAccount,
   registerWeixinAccountId,
   saveWeixinAccount,
-  triggerWeixinChannelReload,
 } from "../auth/accounts.js";
 import {
   DEFAULT_ILINK_BOT_TYPE,
@@ -21,6 +20,7 @@ import { resolveWeixinDemoServiceConfig, type WeixinDemoServiceConfig } from "./
 import { renderDemoPage } from "./page.js";
 import { renderQrImageDataUrl } from "./qr-image.js";
 import { buildDemoAccountsSnapshot, listRecentDemoErrors } from "./state.js";
+import { resolveOrRegisterWeixinUserAgent } from "./user-agent-binding.js";
 
 type HttpServerDeps = {
   logger: PluginLogger;
@@ -91,6 +91,9 @@ export class WeixinDemoHttpServer {
           gateway: {
             status: "online",
           },
+          agentBinding: {
+            dedicatedAgents: snapshot.summary.dedicatedAgentCount,
+          },
           session: {
             dmScope: snapshot.isolation.dmScope,
             secure: snapshot.isolation.secure,
@@ -151,10 +154,15 @@ export class WeixinDemoHttpServer {
             userId: result.userId,
           });
           registerWeixinAccountId(normalizedId);
-          const activation = await triggerWeixinChannelReload();
+          const binding = await resolveOrRegisterWeixinUserAgent({
+            userId: result.userId,
+            accountId: normalizedId,
+            config: this.config,
+          });
           this.respondJson(res, 200, {
             ...result,
-            activation,
+            binding,
+            activation: binding.activation,
             qrImageDataUrl: result.qrcodeUrl ? renderQrImageDataUrl(result.qrcodeUrl) : undefined,
           });
           return;

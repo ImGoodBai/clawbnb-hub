@@ -283,8 +283,8 @@ export function loadConfigRouteTag(accountId?: string): string | undefined {
 }
 
 /**
- * Touches the channel config subtree to trigger OpenClaw's config watcher.
- * Falls back to manual restart when the active config file cannot be updated.
+ * Reports whether config-triggered channel reload is available.
+ * Actual reload nonce writes now happen inside the locked account-binding flow.
  */
 export async function triggerWeixinChannelReload(): Promise<WeixinChannelReloadResult> {
   const status = getWeixinChannelReloadStatus();
@@ -293,50 +293,8 @@ export async function triggerWeixinChannelReload(): Promise<WeixinChannelReloadR
     return status;
   }
 
-  try {
-    const raw = fs.readFileSync(status.configPath, "utf-8");
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const channels =
-      parsed.channels && typeof parsed.channels === "object" ? parsed.channels : {};
-    const section =
-      (channels as Record<string, unknown>)["openclaw-weixin"] &&
-      typeof (channels as Record<string, unknown>)["openclaw-weixin"] === "object"
-        ? ((channels as Record<string, unknown>)["openclaw-weixin"] as Record<string, unknown>)
-        : {};
-    const demoService =
-      section.demoService && typeof section.demoService === "object"
-        ? (section.demoService as Record<string, unknown>)
-        : {};
-
-    const next = {
-      ...parsed,
-      channels: {
-        ...(channels as Record<string, unknown>),
-        "openclaw-weixin": {
-          ...section,
-          demoService: {
-            ...demoService,
-            reloadNonce: new Date().toISOString(),
-          },
-        },
-      },
-    } satisfies Record<string, unknown>;
-
-    writeConfigJsonAtomic(status.configPath, next);
-
-    const result: WeixinChannelReloadResult = {
-      ...status,
-      triggered: true,
-      message: "Channel reload requested via channels.openclaw-weixin.demoService.reloadNonce.",
-    };
-    logger.info(`[reload] ${result.message}`);
-    return result;
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    const result = buildManualReloadResult(reason, status.configPath);
-    logger.warn(`[reload] ${result.message}`);
-    return result;
-  }
+  logger.info(`[reload] ${status.message}`);
+  return status;
 }
 
 // ---------------------------------------------------------------------------

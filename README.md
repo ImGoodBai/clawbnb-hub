@@ -21,11 +21,12 @@ WeClawBot-ex is a productized fork of the official `@tencent-weixin/openclaw-wei
 The current public release supports:
 
 - multiple WeChat accounts connected to one OpenClaw Gateway
+- one WeChat account mapped to one OpenClaw agent by default
 - a local control console for QR login and channel management
 - account-level DM session isolation via `dmScope=per-account-channel-peer`
 - auto-triggered channel reload after QR confirmation, with manual restart fallback
 
-The current release does **not** yet provide one-WeChat-one-agent isolation. That is the next major milestone.
+Older shared-agent test data is not migrated in this release. Reconnect old accounts if you are upgrading from an earlier private build.
 
 ## Console Preview
 
@@ -56,29 +57,29 @@ For compatibility, the current release still uses these runtime identifiers:
 
 This is expected for the current version. A mixed-name log does not mean the wrong repository was installed.
 
-### Configure
+### Run
 
-Add to your OpenClaw config (`openclaw config edit`):
+For the default experience, no extra config is required after install:
+
+```bash
+openclaw gateway
+```
+
+Then open **http://127.0.0.1:19120/**.
+
+### Recommended Config
+
+If you want to pin the isolation mode explicitly, add this to your OpenClaw config:
 
 ```json
 {
   "session": {
     "dmScope": "per-account-channel-peer"
   },
-  "plugins": {
-    "entries": {
-      "molthuman-oc-plugin-wx": {
-        "enabled": true,
-        "package": "molthuman-oc-plugin-wx"
-      }
-    }
-  },
   "channels": {
     "openclaw-weixin": {
-      "baseUrl": "https://ilinkai.weixin.qq.com",
-      "demoService": {
-        "enabled": true,
-        "port": 19120
+      "agentBinding": {
+        "maxAgents": 20
       }
     }
   }
@@ -92,7 +93,7 @@ Add to your OpenClaw config (`openclaw config edit`):
 3. Click **Add WeChat Channel** — scan the QR code with WeChat
 4. After scan success, wait a few seconds for auto refresh
 5. If the new account still does not come online, run `openclaw gateway restart`
-6. Send a message from that WeChat account — your AI agent replies
+6. Send a message from that WeChat account — the bound AI agent replies
 
 Repeat step 3 for each additional WeChat account.
 
@@ -135,24 +136,25 @@ Current automated coverage focuses on:
 ## How It Works
 
 ```
-WeChat User A ──┐
-WeChat User B ──┤──> WeClawBot-ex (multi-account plugin)
-WeChat User C ──┘         |
-                          |──> Shared OpenClaw Agent
-                          |         |
-                          └──< Reply to each WeChat user
+WeChat User A -> Weixin Account A -> Agent A
+WeChat User B -> Weixin Account B -> Agent B
+WeChat User C -> Weixin Account C -> Agent C
+                             |
+                             └──< Reply to each WeChat user
 ```
 
 - Fork of the official `@tencent-weixin/openclaw-weixin` plugin (v1.0.2)
 - Extends the QR login module to support concurrent multi-session management
 - Adds a local web console (`src/service/`) for visual channel management
 - Each WeChat account gets isolated DM sessions when `dmScope=per-account-channel-peer`
-- Agent workspace and tool/runtime side effects are still shared in the current release
+- Each stable WeChat user is bound to one dedicated OpenClaw agent by default
+- Agent workspace is separated by agent id
+- Tool/runtime side effects are still shared at the host level
 
 If you are specifically evaluating data isolation, read [docs/architecture.md](./docs/architecture.md). The short version is:
 
-- current release: shared agent, isolated chat sessions
-- next stage: one WeChat account -> one agent
+- default mode: one WeChat account -> one dedicated agent
+- compatibility fallback: shared `main` agent only when dedicated binding cannot be completed
 - future stage: stronger workspace/tool/runtime isolation
 
 ## Maintenance Boundary
@@ -165,22 +167,15 @@ If you are specifically evaluating data isolation, read [docs/architecture.md](.
 
 ### Stronger Isolation
 
-- [ ] One WeChat account -> one OpenClaw agent
-- [ ] Independent workspace per agent
-- [ ] Tool / runtime side-effect isolation
-- [ ] Tenant boundary hardening
+- [x] One WeChat account -> one OpenClaw agent
+- [ ] Explicit tool / runtime side-effect isolation
+- [ ] Harder tenant boundary enforcement
 
 ### Commercial Distribution
 
 - [ ] Shareable QR codes for external distribution
 - [ ] Paid entry points per WeChat channel
 - [ ] Plugin-side billing and commercial distribution workflow
-
-### Core Runtime
-
-- [ ] Group chat (@bot mode)
-- [ ] Media message support (images, files, voice)
-- [ ] Precise account hot-start without channel-level reload
 
 ## Common Questions
 
@@ -190,11 +185,11 @@ At the runtime layer, yes. The official plugin already has multi-account account
 
 ### Is data fully isolated today?
 
-Not fully. Today the main improvement is chat-session isolation. The current release does not yet give each WeChat account its own OpenClaw agent, workspace, or tool sandbox.
+Not fully. One WeChat account now maps to one dedicated OpenClaw agent by default, and the agent workspace is separated by agent id, but tool/runtime side effects are still shared at the host level.
 
 ### Is one WeChat account mapped to one agent today?
 
-Not yet. Today multiple WeChat accounts can still point to the same OpenClaw agent while using isolated DM sessions. One-WeChat-one-agent is the next major architecture milestone.
+Yes. That is now the default behavior of this repo. Shared-agent mode only remains as a compatibility fallback when dedicated binding cannot be completed.
 
 ## License
 

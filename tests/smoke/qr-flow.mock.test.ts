@@ -48,6 +48,9 @@ describe("mock qr flow smoke", () => {
       session: {
         dmScope: "per-account-channel-peer",
       },
+      agents: {
+        list: [{ id: "main" }],
+      },
       channels: {
         "openclaw-weixin": {
           demoService: {
@@ -55,6 +58,10 @@ describe("mock qr flow smoke", () => {
             bind: "127.0.0.1",
             port,
             restartCommand: "openclaw gateway restart",
+          },
+          agentBinding: {
+            enabled: true,
+            maxAgents: 20,
           },
         },
       },
@@ -78,6 +85,10 @@ describe("mock qr flow smoke", () => {
               bind: "127.0.0.1",
               port,
               restartCommand: "openclaw gateway restart",
+            },
+            agentBinding: {
+              enabled: true,
+              maxAgents: 20,
             },
           },
         },
@@ -115,6 +126,8 @@ describe("mock qr flow smoke", () => {
     expect(statusResult.statusCode).toBe(200);
     expect(statusResult.json.connected).toBe(true);
     expect(statusResult.json.status).toBe("confirmed");
+    expect(statusResult.json.binding.mode).toBe("dedicated");
+    expect(statusResult.json.binding.fallback).toBe(false);
     expect(statusResult.json.activation.mode).toBe("auto");
     expect(statusResult.json.activation.triggered).toBe(true);
 
@@ -127,15 +140,29 @@ describe("mock qr flow smoke", () => {
     );
     const indexPath = path.join(env.stateDir, "openclaw-weixin", "accounts.json");
     const config = JSON.parse(fs.readFileSync(env.configPath, "utf-8")) as {
+      agents?: { list?: Array<{ id?: string }> };
+      bindings?: Array<{ match?: { channel?: string; accountId?: string }; agentId?: string }>;
       channels?: {
         "openclaw-weixin"?: {
           demoService?: { reloadNonce?: string };
         };
       };
     };
+    const mapPath = path.join(env.stateDir, "openclaw-weixin", "user-agent-map.json");
+    const agentId = statusResult.json.binding.agentId as string;
 
     expect(fs.existsSync(accountPath)).toBe(true);
+    expect(fs.existsSync(mapPath)).toBe(true);
     expect(JSON.parse(fs.readFileSync(indexPath, "utf-8"))).toContain(normalizedAccountId);
+    expect(config.agents?.list?.some((item) => item.id === agentId)).toBe(true);
+    expect(
+      config.bindings?.some(
+        (item) =>
+          item.match?.channel === "openclaw-weixin" &&
+          item.match?.accountId === normalizedAccountId &&
+          item.agentId === agentId,
+      ),
+    ).toBe(true);
     expect(config.channels?.["openclaw-weixin"]?.demoService?.reloadNonce).toMatch(
       /^\d{4}-\d{2}-\d{2}T/,
     );
