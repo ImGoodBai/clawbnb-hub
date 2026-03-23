@@ -62,7 +62,7 @@ If you previously installed the official `openclaw-weixin` plugin locally, remov
 
 In the same OpenClaw profile, the recommended state is:
 
-- `plugins.entries.molthuman-oc-plugin-wx.enabled = true`
+- `plugins.entries.weclawbot-ex.enabled = true`
 - `plugins.entries.openclaw-weixin.enabled = false`
 
 If you want both plugins available, keep them in separate profiles / separate `OPENCLAW_STATE_DIR` values.
@@ -72,7 +72,7 @@ If you want both plugins available, keep them in separate profiles / separate `O
 For compatibility, the current release still uses these runtime identifiers:
 
 - Product / repo name: `WeClawBot-ex`
-- Plugin package + plugin entry key: `molthuman-oc-plugin-wx`
+- npm package + plugin entry key: `weclawbot-ex`
 - Channel config key: `channels.openclaw-weixin`
 
 This is expected for the current version. A mixed-name log does not mean the wrong repository was installed.

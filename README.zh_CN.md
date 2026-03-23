@@ -62,7 +62,7 @@ openclaw plugins install .
 
 同一个 OpenClaw profile 里，建议保持下面这种状态：
 
-- `plugins.entries.molthuman-oc-plugin-wx.enabled = true`
+- `plugins.entries.weclawbot-ex.enabled = true`
 - `plugins.entries.openclaw-weixin.enabled = false`
 
 如果你确实要两边都保留，请拆到不同的 profile / 不同的 `OPENCLAW_STATE_DIR`。
@@ -72,7 +72,7 @@ openclaw plugins install .
 当前版本为了兼容运行时，仍然保留下面这几套标识：
 
 - 产品名 / 仓库名：`WeClawBot-ex`
-- 插件包名 + 插件配置键：`molthuman-oc-plugin-wx`
+- npm 包名 + 插件配置键：`weclawbot-ex`
 - 渠道配置键：`channels.openclaw-weixin`
 
 所以日志里如果同时出现这几个名字，不代表装错仓库，这是当前版本的兼容口径。

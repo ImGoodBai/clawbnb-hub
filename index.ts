@@ -8,7 +8,7 @@ import { setWeixinRuntime } from "./src/runtime.js";
 import { createWeixinDemoService } from "./src/service/index.js";
 
 const plugin = {
-  id: "molthuman-oc-plugin-wx",
+  id: "weclawbot-ex",
   name: "WeClawBot-ex",
   description: "WeClawBot-ex multi-account Weixin plugin with local control console",
   configSchema: buildChannelConfigSchema(WeixinDemoPluginConfigSchema),

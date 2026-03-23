@@ -1,5 +1,5 @@
 {
-  "id": "molthuman-oc-plugin-wx",
+  "id": "weclawbot-ex",
   "name": "WeClawBot-ex",
   "description": "WeClawBot-ex multi-account Weixin plugin with local control page.",
   "channels": ["openclaw-weixin"],

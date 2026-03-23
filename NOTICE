@@ -8,7 +8,7 @@ Modifications by MoltHuman:
 - Multi-account concurrent QR session management in src/auth/login-qr.ts
 - Extended config schema with demoService support in src/config/config-schema.ts
 - Local web management console in src/service/
-- Plugin entry registration for molthuman-oc-plugin-wx
+- Plugin entry registration for weclawbot-ex
 
 Maintenance note:
 - The upstream-derived protocol/runtime layer is currently treated as frozen.

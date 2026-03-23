@@ -7,7 +7,7 @@ export function createWeixinDemoService(_api: OpenClawPluginApi): OpenClawPlugin
   let server: WeixinDemoHttpServer | null = null;
 
   return {
-    id: "molthuman-oc-plugin-wx-demo-service",
+    id: "weclawbot-ex-demo-service",
     start: async (ctx) => {
       const config = resolveWeixinDemoServiceConfig(ctx.config);
       const conflict = detectOfficialWeixinPluginConflict(ctx.config);

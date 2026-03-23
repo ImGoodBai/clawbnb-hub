@@ -1,6 +1,6 @@
 {
-  "name": "molthuman-oc-plugin-wx",
-  "version": "2026.3.22",
+  "name": "weclawbot-ex",
+  "version": "2026.3.23",
   "description": "WeClawBot-ex OpenClaw Weixin demo plugin fork with local web console",
   "license": "MIT",
   "author": "MoltHuman",
@@ -14,12 +14,14 @@
     "src/",
     "!src/**/*.test.ts",
     "!src/**/node_modules/",
+    "docs/",
     "index.ts",
     "openclaw.plugin.json",
     "README.md",
     "README.zh_CN.md",
     "CHANGELOG.md",
-    "CHANGELOG.zh_CN.md"
+    "CHANGELOG.zh_CN.md",
+    "NOTICE"
   ],
   "scripts": {
     "test": "vitest run --coverage",
@@ -29,7 +31,7 @@
     "test:gate:full": "npm run typecheck && npm run test:gate",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "prepublishOnly": "npm run typecheck && npm run build"
+    "prepublishOnly": "npm run test:gate"
   },
   "engines": {
     "node": ">=22"
@@ -51,6 +53,9 @@
     "extensions": [
       "./index.ts"
     ],
+    "release": {
+      "publishToNpm": true
+    },
     "channel": {
       "id": "openclaw-weixin",
       "label": "openclaw-weixin",
@@ -61,12 +66,15 @@
       "order": 75
     },
     "install": {
-      "npmSpec": "molthuman-oc-plugin-wx",
+      "npmSpec": "weclawbot-ex",
       "defaultChoice": "npm"
     }
   },
   "upstream": {
     "package": "@tencent-weixin/openclaw-weixin",
     "version": "1.0.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
