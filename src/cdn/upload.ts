@@ -107,16 +107,18 @@ async function uploadMediaToCdn(params: {
   const uploadUrlResp = await getUploadUrl(uploadReq);
 
   const uploadParam = uploadUrlResp.upload_param;
-  if (!uploadParam) {
+  const uploadFullUrl = uploadUrlResp.upload_full_url;
+  if (!uploadParam && !uploadFullUrl) {
     logger.error(
-      `${label}: getUploadUrl returned no upload_param, resp=${JSON.stringify(uploadUrlResp)}`,
+      `${label}: getUploadUrl returned neither upload_param nor upload_full_url, resp=${JSON.stringify(uploadUrlResp)}`,
     );
-    throw new Error(`${label}: getUploadUrl returned no upload_param`);
+    throw new Error(`${label}: getUploadUrl returned no upload target`);
   }
 
   const { downloadParam: downloadEncryptedQueryParam } = await uploadBufferToCdn({
     buf: plaintext,
     uploadParam,
+    uploadUrl: uploadFullUrl,
     filekey,
     cdnBaseUrl,
     aeskey,
@@ -124,10 +126,11 @@ async function uploadMediaToCdn(params: {
   });
 
   let thumbDownloadEncryptedQueryParam: string | undefined;
-  if (needThumb && thumbPlaintext && uploadUrlResp.thumb_upload_param) {
+  if (needThumb && thumbPlaintext && (uploadUrlResp.thumb_upload_param || uploadUrlResp.thumb_upload_full_url)) {
     const thumbUploaded = await uploadBufferToCdn({
       buf: thumbPlaintext,
       uploadParam: uploadUrlResp.thumb_upload_param,
+      uploadUrl: uploadUrlResp.thumb_upload_full_url,
       filekey,
       cdnBaseUrl,
       aeskey,
