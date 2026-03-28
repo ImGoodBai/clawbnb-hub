@@ -15,12 +15,17 @@ export type UploadedFileInfo = {
   filekey: string;
   /** 由 upload_param 上传后 CDN 返回的下载加密参数; fill into ImageItem.media.encrypt_query_param */
   downloadEncryptedQueryParam: string;
+  /** 缩略图下载参数（图片/视频时可用） */
+  thumbDownloadEncryptedQueryParam?: string;
   /** AES-128-ECB key, hex-encoded; convert to base64 for CDNMedia.aes_key */
   aeskey: string;
   /** Plaintext file size in bytes */
   fileSize: number;
   /** Ciphertext file size in bytes (AES-128-ECB with PKCS7 padding); use for ImageItem.hd_size / mid_size */
   fileSizeCiphertext: number;
+  /** Thumbnail plaintext/ciphertext size, when available */
+  thumbFileSize?: number;
+  thumbFileSizeCiphertext?: number;
 };
 
 /**
@@ -56,8 +61,9 @@ async function uploadMediaToCdn(params: {
   cdnBaseUrl: string;
   mediaType: (typeof UploadMediaType)[keyof typeof UploadMediaType];
   label: string;
+  noNeedThumb?: boolean;
 }): Promise<UploadedFileInfo> {
-  const { filePath, toUserId, opts, cdnBaseUrl, mediaType, label } = params;
+  const { filePath, toUserId, opts, cdnBaseUrl, mediaType, label, noNeedThumb } = params;
 
   const plaintext = await fs.readFile(filePath);
   const rawsize = plaintext.length;
@@ -70,7 +76,15 @@ async function uploadMediaToCdn(params: {
     `${label}: file=${filePath} rawsize=${rawsize} filesize=${filesize} md5=${rawfilemd5} filekey=${filekey}`,
   );
 
-  const uploadUrlResp = await getUploadUrl({
+  const needThumb = mediaType === UploadMediaType.IMAGE || mediaType === UploadMediaType.VIDEO;
+  const thumbPlaintext = needThumb ? plaintext : undefined;
+  const thumbRawsize = thumbPlaintext?.length;
+  const thumbRawfilemd5 = thumbPlaintext
+    ? crypto.createHash("md5").update(thumbPlaintext).digest("hex")
+    : undefined;
+  const thumbFilesize = thumbRawsize ? aesEcbPaddedSize(thumbRawsize) : undefined;
+
+  const uploadReq = {
     ...opts,
     filekey,
     media_type: mediaType,
@@ -78,33 +92,62 @@ async function uploadMediaToCdn(params: {
     rawsize,
     rawfilemd5,
     filesize,
-    no_need_thumb: true,
+    ...(needThumb
+      ? {
+          thumb_rawsize: thumbRawsize,
+          thumb_rawfilemd5: thumbRawfilemd5,
+          thumb_filesize: thumbFilesize,
+        }
+      : {}),
     aeskey: aeskey.toString("hex"),
-  });
+    ...(noNeedThumb === undefined ? {} : { no_need_thumb: noNeedThumb }),
+  };
+
+  logger.debug(`${label}: getUploadUrl request=${JSON.stringify({ ...uploadReq, aeskey: '***' })}`);
+  const uploadUrlResp = await getUploadUrl(uploadReq);
 
   const uploadParam = uploadUrlResp.upload_param;
-  if (!uploadParam) {
+  const uploadFullUrl = uploadUrlResp.upload_full_url;
+  if (!uploadParam && !uploadFullUrl) {
     logger.error(
-      `${label}: getUploadUrl returned no upload_param, resp=${JSON.stringify(uploadUrlResp)}`,
+      `${label}: getUploadUrl returned neither upload_param nor upload_full_url, resp=${JSON.stringify(uploadUrlResp)}`,
     );
-    throw new Error(`${label}: getUploadUrl returned no upload_param`);
+    throw new Error(`${label}: getUploadUrl returned no upload target`);
   }
 
   const { downloadParam: downloadEncryptedQueryParam } = await uploadBufferToCdn({
     buf: plaintext,
     uploadParam,
+    uploadUrl: uploadFullUrl,
     filekey,
     cdnBaseUrl,
     aeskey,
     label: `${label}[orig filekey=${filekey}]`,
   });
 
+  let thumbDownloadEncryptedQueryParam: string | undefined;
+  if (needThumb && thumbPlaintext && (uploadUrlResp.thumb_upload_param || uploadUrlResp.thumb_upload_full_url)) {
+    const thumbUploaded = await uploadBufferToCdn({
+      buf: thumbPlaintext,
+      uploadParam: uploadUrlResp.thumb_upload_param,
+      uploadUrl: uploadUrlResp.thumb_upload_full_url,
+      filekey,
+      cdnBaseUrl,
+      aeskey,
+      label: `${label}[thumb filekey=${filekey}]`,
+    });
+    thumbDownloadEncryptedQueryParam = thumbUploaded.downloadParam;
+  }
+
   return {
     filekey,
     downloadEncryptedQueryParam,
+    thumbDownloadEncryptedQueryParam,
     aeskey: aeskey.toString("hex"),
     fileSize: rawsize,
     fileSizeCiphertext: filesize,
+    thumbFileSize: thumbRawsize,
+    thumbFileSizeCiphertext: thumbFilesize,
   };
 }
 
@@ -151,5 +194,6 @@ export async function uploadFileAttachmentToWeixin(params: {
     ...params,
     mediaType: UploadMediaType.FILE,
     label: "uploadFileAttachmentToWeixin",
+    noNeedThumb: true,
   });
 }
