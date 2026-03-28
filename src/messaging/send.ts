@@ -13,6 +13,19 @@ function generateClientId(): string {
   return generateId("openclaw-weixin");
 }
 
+function buildTargetFields(target: string): { to_user_id?: string; group_id?: string } {
+  const trimmed = target.trim();
+  if (!trimmed) {
+    return {};
+  }
+  // Weixin group ids are surfaced separately from user ids in getUpdates.
+  // The common direct-message id shape is xxx@im.wechat.
+  if (trimmed.endsWith("@im.wechat")) {
+    return { to_user_id: trimmed };
+  }
+  return { group_id: trimmed };
+}
+
 /**
  * Convert markdown-formatted model reply to plain text for Weixin delivery.
  * Preserves newlines; strips markdown syntax.
@@ -49,7 +62,7 @@ function buildTextMessageReq(params: {
   return {
     msg: {
       from_user_id: "",
-      to_user_id: to,
+      ...buildTargetFields(to),
       client_id: clientId,
       message_type: MessageType.BOT,
       message_state: MessageState.FINISH,
@@ -135,7 +148,7 @@ async function sendMediaItems(params: {
     const req: SendMessageReq = {
       msg: {
         from_user_id: "",
-        to_user_id: to,
+        ...buildTargetFields(to),
         client_id: lastClientId,
         message_type: MessageType.BOT,
         message_state: MessageState.FINISH,
@@ -194,7 +207,17 @@ export async function sendImageMessageWeixin(params: {
         aes_key: Buffer.from(uploaded.aeskey).toString("base64"),
         encrypt_type: 1,
       },
+      ...(uploaded.thumbDownloadEncryptedQueryParam
+        ? {
+            thumb_media: {
+              encrypt_query_param: uploaded.thumbDownloadEncryptedQueryParam,
+              aes_key: Buffer.from(uploaded.aeskey).toString("base64"),
+              encrypt_type: 1,
+            },
+          }
+        : {}),
       mid_size: uploaded.fileSizeCiphertext,
+      ...(uploaded.thumbFileSizeCiphertext ? { thumb_size: uploaded.thumbFileSizeCiphertext } : {}),
     },
   };
 
