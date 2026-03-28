@@ -10,6 +10,7 @@
 - 将微信 channel id 和 state namespace 统一切到 `clawbnb-weixin`
 - 安装与迁移文档改写为从 `molthuman-oc-plugin` 的干净切换方案
 - 将 claim token / 平台主页联动明确收口到 optional integration
+- 将内嵌微信兼容层同步到上游 `2.1.1` 的关键协议行为：QR redirect、iLink headers、CDN full URL
 
 ### 移除
 

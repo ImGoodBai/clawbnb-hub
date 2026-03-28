@@ -2,6 +2,8 @@
 
 [English](./README.md)
 
+仓库改名说明：这个公开仓此前的名字是 `WeClawBot-ex`。
+
 `clawbnb-hub` 是一个独立的 OpenClaw 插件包，统一收拢了：
 
 - `clawbnb-weixin` 微信 channel 运行时
@@ -111,7 +113,7 @@ npm pack --dry-run --cache ./.npm-cache
 
 ## 上游说明
 
-当前仍以 `@tencent-weixin/openclaw-weixin` 为上游运行时基线。
+当前以上游 `@tencent-weixin/openclaw-weixin@2.1.1` 为运行时基线。
 上游派生层默认受控，一方新增能力优先放在控制台、包装层和文档层。
 
 ## 许可证

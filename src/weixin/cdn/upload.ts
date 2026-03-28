@@ -1,15 +1,14 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-
 import { getUploadUrl } from "../api/api.js";
 import type { WeixinApiOptions } from "../api/api.js";
+import { UploadMediaType } from "../api/types.js";
+import { getExtensionFromContentTypeOrUrl } from "../media/mime.js";
+import { logger } from "../util/logger.js";
+import { tempFileName } from "../util/random.js";
 import { aesEcbPaddedSize } from "./aes-ecb.js";
 import { uploadBufferToCdn } from "./cdn-upload.js";
-import { logger } from "../util/logger.js";
-import { getExtensionFromContentTypeOrUrl } from "../media/mime.js";
-import { tempFileName } from "../util/random.js";
-import { UploadMediaType } from "../api/types.js";
 
 export type UploadedFileInfo = {
   filekey: string;
@@ -82,17 +81,19 @@ async function uploadMediaToCdn(params: {
     aeskey: aeskey.toString("hex"),
   });
 
+  const uploadFullUrl = uploadUrlResp.upload_full_url?.trim();
   const uploadParam = uploadUrlResp.upload_param;
-  if (!uploadParam) {
+  if (!uploadFullUrl && !uploadParam) {
     logger.error(
-      `${label}: getUploadUrl returned no upload_param, resp=${JSON.stringify(uploadUrlResp)}`,
+      `${label}: getUploadUrl returned no upload URL (need upload_full_url or upload_param), resp=${JSON.stringify(uploadUrlResp)}`,
     );
-    throw new Error(`${label}: getUploadUrl returned no upload_param`);
+    throw new Error(`${label}: getUploadUrl returned no upload URL`);
   }
 
   const { downloadParam: downloadEncryptedQueryParam } = await uploadBufferToCdn({
     buf: plaintext,
-    uploadParam,
+    uploadFullUrl: uploadFullUrl || undefined,
+    uploadParam: uploadParam ?? undefined,
     filekey,
     cdnBaseUrl,
     aeskey,

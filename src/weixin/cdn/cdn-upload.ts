@@ -1,7 +1,7 @@
-import { encryptAesEcb } from "./aes-ecb.js";
-import { buildCdnUploadUrl } from "./cdn-url.js";
 import { logger } from "../util/logger.js";
 import { redactUrl } from "../util/redact.js";
+import { encryptAesEcb } from "./aes-ecb.js";
+import { buildCdnUploadUrl } from "./cdn-url.js";
 
 /** Maximum retry attempts for CDN upload. */
 const UPLOAD_MAX_RETRIES = 3;
@@ -13,15 +13,24 @@ const UPLOAD_MAX_RETRIES = 3;
  */
 export async function uploadBufferToCdn(params: {
   buf: Buffer;
-  uploadParam: string;
+  uploadFullUrl?: string;
+  uploadParam?: string;
   filekey: string;
   cdnBaseUrl: string;
   label: string;
   aeskey: Buffer;
 }): Promise<{ downloadParam: string }> {
-  const { buf, uploadParam, filekey, cdnBaseUrl, label, aeskey } = params;
+  const { buf, uploadFullUrl, uploadParam, filekey, cdnBaseUrl, label, aeskey } = params;
   const ciphertext = encryptAesEcb(buf, aeskey);
-  const cdnUrl = buildCdnUploadUrl({ cdnBaseUrl, uploadParam, filekey });
+  const trimmedFullUrl = uploadFullUrl?.trim();
+  let cdnUrl: string;
+  if (trimmedFullUrl) {
+    cdnUrl = trimmedFullUrl;
+  } else if (uploadParam) {
+    cdnUrl = buildCdnUploadUrl({ cdnBaseUrl, uploadParam, filekey });
+  } else {
+    throw new Error(`${label}: CDN upload URL missing (need upload_full_url or upload_param)`);
+  }
   logger.debug(`${label}: CDN POST url=${redactUrl(cdnUrl)} ciphertextSize=${ciphertext.length}`);
 
   let downloadParam: string | undefined;
@@ -50,9 +59,7 @@ export async function uploadBufferToCdn(params: {
       }
       downloadParam = res.headers.get("x-encrypted-param") ?? undefined;
       if (!downloadParam) {
-        logger.error(
-          `${label}: CDN response missing x-encrypted-param header attempt=${attempt}`,
-        );
+        logger.error(`${label}: CDN response missing x-encrypted-param header attempt=${attempt}`);
         throw new Error("CDN upload response missing x-encrypted-param header");
       }
       logger.debug(`${label}: CDN upload success attempt=${attempt}`);

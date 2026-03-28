@@ -11,6 +11,12 @@ import type {
 } from "openclaw/plugin-sdk/core";
 import WebSocket from "ws";
 import {
+  ensureMoltProxyRuntimeConfig,
+  resolveMoltMarketConfig,
+  resolveMoltMarketConfigFromOpenClawConfig,
+  type ResolvedMoltMarketConfig,
+} from "./config.js";
+import {
   buildOrderTag,
   buildSessionKey,
   decodeEnvelope,
@@ -28,12 +34,6 @@ import {
   type SessionOpenPayload,
   type SessionReplyChunkPayload,
 } from "./contracts.js";
-import {
-  ensureMoltProxyRuntimeConfig,
-  resolveMoltMarketConfig,
-  resolveMoltMarketConfigFromOpenClawConfig,
-  type ResolvedMoltMarketConfig,
-} from "./config.js";
 
 type WsLike = Pick<WebSocket, "on" | "send" | "close" | "readyState">;
 type WsCtorLike = new (url: string) => WsLike;
@@ -64,7 +64,7 @@ type ActiveSession = {
 
 const defaultDeps: ServiceDeps = {
   WebSocketCtor: WebSocket,
-  fetch: (input, init) => fetch(input, init),
+  fetch: globalThis.fetch,
   now: () => Date.now(),
   setTimeout,
   clearTimeout,
@@ -84,7 +84,10 @@ const SERVICE_LOG_PREFIX = "[clawbnb-hub]";
 let moltMarketTraceDirReady = false;
 let moltMarketTraceWarned = false;
 
-function buildRegisterPayload(config: ResolvedMoltMarketConfig, agentId: string): AgentRegisterPayload {
+function buildRegisterPayload(
+  config: ResolvedMoltMarketConfig,
+  agentId: string,
+): AgentRegisterPayload {
   return {
     agentId,
     apiKeyHash: crypto.createHash("sha256").update(config.apiKey).digest("hex"),
@@ -101,7 +104,10 @@ function buildHeartbeatPayload(agentId: string, now: number): AgentHeartbeatPayl
   };
 }
 
-function buildStatusPayload(agentId: string, presenceStatus: PresenceStatus): AgentStatusChangePayload {
+function buildStatusPayload(
+  agentId: string,
+  presenceStatus: PresenceStatus,
+): AgentStatusChangePayload {
   return {
     agentId,
     presenceStatus,
@@ -327,7 +333,10 @@ export class MoltMarketServiceRuntime {
       if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
         return;
       }
-      this.sendEvent("agent.heartbeat", buildHeartbeatPayload(this.resolvedAgentId, this.deps.now()));
+      this.sendEvent(
+        "agent.heartbeat",
+        buildHeartbeatPayload(this.resolvedAgentId, this.deps.now()),
+      );
     }, this.config.heartbeatIntervalMs);
   }
 
@@ -375,9 +384,11 @@ export class MoltMarketServiceRuntime {
       dir: "in",
       event: envelope.event,
       orderId: typeof envelope.payload?.orderId === "string" ? envelope.payload.orderId : undefined,
-      sessionId: typeof envelope.payload?.sessionId === "string" ? envelope.payload.sessionId : undefined,
+      sessionId:
+        typeof envelope.payload?.sessionId === "string" ? envelope.payload.sessionId : undefined,
       sequenceId:
-        typeof envelope.payload?.sequenceId === "number" || typeof envelope.payload?.sequenceId === "string"
+        typeof envelope.payload?.sequenceId === "number" ||
+        typeof envelope.payload?.sequenceId === "string"
           ? Number(envelope.payload.sequenceId)
           : undefined,
       agentId: typeof envelope.payload?.agentId === "string" ? envelope.payload.agentId : undefined,
@@ -450,9 +461,7 @@ export class MoltMarketServiceRuntime {
         },
       });
       if (!response.ok) {
-        this.logger.warn(
-          `${SERVICE_LOG_PREFIX} agent lookup failed: HTTP ${response.status}`,
-        );
+        this.logger.warn(`${SERVICE_LOG_PREFIX} agent lookup failed: HTTP ${response.status}`);
         return "";
       }
       const parsed = (await response.json()) as {
@@ -621,7 +630,7 @@ export class MoltMarketServiceRuntime {
         sequenceId: Number(payload.sequenceId),
         status: outcome.status,
         model: this.config.proxyModelId,
-        error: outcome.status === "error" ? outcome.error ?? "unknown error" : undefined,
+        error: outcome.status === "error" ? (outcome.error ?? "unknown error") : undefined,
       });
 
       if (outcome.status === "ok") {
@@ -673,14 +682,18 @@ export class MoltMarketServiceRuntime {
   private async handleRemoteSessionClose(payload: SessionClosePayload): Promise<void> {
     const session = this.sessions.get(payload.orderId);
     if (!session) {
-      this.sendEvent("session.close_ack", { orderId: payload.orderId } satisfies SessionCloseAckPayload);
+      this.sendEvent("session.close_ack", {
+        orderId: payload.orderId,
+      } satisfies SessionCloseAckPayload);
       return;
     }
     session.closing = true;
     if (!session.activeRunId) {
       await this.finalizeSession(session);
     }
-    this.sendEvent("session.close_ack", { orderId: payload.orderId } satisfies SessionCloseAckPayload);
+    this.sendEvent("session.close_ack", {
+      orderId: payload.orderId,
+    } satisfies SessionCloseAckPayload);
     this.syncPresence();
   }
 

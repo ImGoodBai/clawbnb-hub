@@ -12,6 +12,7 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/) format.
 - renamed the Weixin channel id and state namespace to `clawbnb-weixin`
 - rewrote install and migration docs for a clean break from `molthuman-oc-plugin`
 - moved profile-linking helpers into an explicit optional-integration section
+- synced the embedded Weixin compatibility layer to the upstream `2.1.1` protocol behavior for QR redirect, iLink headers, and CDN full URLs
 
 ### Removed
 

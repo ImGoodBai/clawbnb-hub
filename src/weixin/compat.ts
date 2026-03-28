@@ -1,6 +1,6 @@
 import { logger } from "./util/logger.js";
 
-export const WEIXIN_UPSTREAM_BASELINE = "2.0.1";
+export const WEIXIN_UPSTREAM_BASELINE = "2.1.1";
 export const SUPPORTED_HOST_MIN = "2026.3.22";
 
 type OpenClawVersion = {

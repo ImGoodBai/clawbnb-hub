@@ -1,5 +1,7 @@
 # ClawBNB Hub
 
+Repository rename note: this public repository was previously published as `WeClawBot-ex`.
+
 `clawbnb-hub` is a standalone OpenClaw plugin that bundles:
 
 - the `clawbnb-weixin` channel runtime
@@ -111,7 +113,7 @@ npm pack --dry-run --cache ./.npm-cache
 
 ## Upstream
 
-This project continues to track `@tencent-weixin/openclaw-weixin` as the upstream runtime baseline.
+This project currently tracks `@tencent-weixin/openclaw-weixin@2.1.1` as the upstream runtime baseline.
 Upstream-derived files remain intentionally constrained; first-party work should stay in the control console, packaging, and docs layers.
 
 ## License
